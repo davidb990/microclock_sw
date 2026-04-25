@@ -6,6 +6,8 @@
 #include "hardware/powman.h"
 #include "hardware/structs/powman.h"
 #include "pico/aon_timer.h"
+#include "hardware/pio.h"
+#include "quadrature_encoder.pio.h"
 
 #define TX    0
 #define RX    1
@@ -59,6 +61,9 @@ struct tm time_stat = {0, 0, 0, 0, 0, 0, 0, 0};
 struct tm alarm =     {0, 0, 0, 0, 0, 0, 0, 0};
 
 bool alarm_on = false;
+
+PIO pio = pio0;
+const uint sm = 0;
 
 
 void setup_gpio() {
@@ -169,6 +174,10 @@ int run_startup(void) {
     setup_clks();
     setup_display();
 
+    // PIO setup
+    pio_add_program(pio, &quadrature_encoder_program);
+    quadrature_encoder_program_init(pio, sm, ROTP, ROTM, 1000);
+
     // initial time to aid with debug
     time_stat.tm_hour = 8;
     time_stat.tm_min  = 0;
@@ -251,6 +260,9 @@ int run_adjust_hrs(void) {
 
     uint32_t gpio_poll;
 
+    int new_value, delta, old_value = 0;
+    int last_value = 0, last_delta = 0;
+
     while (1) {
         gpio_poll = gpio_get_all();
         curr_rot[0] = gpio_poll & (0x1 << ROTP) ? true : false;
@@ -261,15 +273,37 @@ int run_adjust_hrs(void) {
         display_char((uint32_t) target_hr%10  + 0x30, 0);
         display_char((uint32_t) target_hr/10  + 0x30, 1);
 
-        if (curr_rot != last_rot) {
-            if (!curr_rot[0] & curr_rot[1]) {
+        if (curr_rot[0] != last_rot[0]) {
+            // if (!curr_rot[0] & curr_rot[1]) {
+            //     target_hr = ((target_hr + 1) % 24);
+            //     //sleep_ms(40);
+            // } else if (curr_rot[0] & !curr_rot[1]) {
+            //     target_hr = target_hr == 0x0 ? 23u : ((target_hr - 1) % 24);
+            //     //sleep_ms(40);
+
+            if (curr_rot[1] != curr_rot[0]) {
                 target_hr = ((target_hr + 1) % 24);
                 sleep_ms(80);
-            } else if (curr_rot[0] & !curr_rot[1]) {
+            } else {
                 target_hr = target_hr == 0x0 ? 23u : ((target_hr - 1) % 24);
                 sleep_ms(80);
             }
         }
+
+        // new_value = quadrature_encoder_get_count(pio, sm);
+        // delta = new_value - old_value;
+        // old_value = new_value;
+
+        // if (delta >= 1) {
+        //     target_hr = ((target_hr + 1) % 24);
+        //     last_value = new_value;
+        //     last_delta = delta;
+        // } else if (delta <= -1) {
+        //     target_hr = ((target_hr - 1) % 24);
+        //     last_value = new_value;
+        //     last_delta = delta;
+        // }
+        // sleep_ms(200);
 
         curr_btn = gpio_get(ROTBN);
         if (!curr_btn & last_btn) {

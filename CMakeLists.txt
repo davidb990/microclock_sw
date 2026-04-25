@@ -37,6 +37,8 @@ pico_sdk_init()
 
 add_executable(microclock microclock.c )
 
+pico_generate_pio_header(microclock ${CMAKE_CURRENT_LIST_DIR}/quadrature_encoder.pio)
+
 pico_set_program_name(microclock "microclock")
 pico_set_program_version(microclock "0.1")
 
@@ -59,6 +61,7 @@ target_link_libraries(microclock
         hardware_gpio
         hardware_powman
         pico_aon_timer
+        hardware_pio
         )
 
 pico_add_extra_outputs(microclock)
