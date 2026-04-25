@@ -313,11 +313,11 @@ int run_adjust_mins(void) {
         display_char((uint32_t) target_min%10  + 0x30, 0);
         display_char((uint32_t) target_min/10  + 0x30, 1);
 
-        if (curr_rot != last_rot) {
-            if (!curr_rot[0] & curr_rot[1]) {
+        if (curr_rot[0] != last_rot[0]) {
+            if (curr_rot[1] != curr_rot[0]) {
                 target_min = ((target_min + 1) % 60);
                 sleep_ms(80);
-            } else if (curr_rot[0] & !curr_rot[1]) {
+            } else {
                 target_min = target_min == 0x0 ? 59u : ((target_min - 1) % 60);
                 sleep_ms(80);
             }
@@ -374,13 +374,13 @@ int run_set_menu() {
             if (menu_sel == MENU_ALARM_OFF) return DISABLE_ALARM;
         }
 
-        if (curr_rot != last_rot) {
-            if (!curr_rot[0] & curr_rot[1]) {
+        if (curr_rot[0] != last_rot[0]) {
+            if (curr_rot[1] != curr_rot[0]) {
                 menu_sel = (menu_sel + 1) % 3;
-                sleep_ms(100);
-            } else if (curr_rot[0] & !curr_rot[1]) {
+                sleep_ms(80);
+            } else {
                 menu_sel = (menu_sel + 2) % 3;
-                sleep_ms(100);
+                sleep_ms(80);
             }
         }
 
@@ -432,8 +432,8 @@ int run_adjust_hrs_mins(void) {
         display_char((uint32_t) alarm.tm_hour%10 + 0x30, 2);
         display_char((uint32_t) alarm.tm_hour/10 + 0x30, 3);
 
-        if (curr_rot != last_rot) {
-            if (!curr_rot[0] & curr_rot[1]) {
+        if (curr_rot[0] != last_rot[0]) {
+            if (curr_rot[1] != curr_rot[0]) {
                 if (alarm.tm_min == 55) {
                     alarm.tm_min = 0;
                     alarm.tm_hour = alarm.tm_hour == 23 ? 0 : alarm.tm_hour + 1;
@@ -441,7 +441,7 @@ int run_adjust_hrs_mins(void) {
                     alarm.tm_min = alarm.tm_min + 5;
                 }
                 sleep_ms(80);
-            } else if (curr_rot[0] & !curr_rot[1]) {
+            } else {
                 if (alarm.tm_min == 0) {
                     alarm.tm_min = 55;
                     alarm.tm_hour = alarm.tm_hour == 0 ? 23 : alarm.tm_hour - 1;
