@@ -53,13 +53,18 @@ target_include_directories(microclock PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
 )
 
+add_subdirectory(lib)
+
+
 # Add any user requested libraries
 target_link_libraries(microclock 
         hardware_clocks
         hardware_gpio
         hardware_powman
         pico_aon_timer
+        dl2416t
         )
 
 pico_add_extra_outputs(microclock)
+
 

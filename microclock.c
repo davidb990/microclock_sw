@@ -6,6 +6,7 @@
 #include "hardware/powman.h"
 #include "hardware/structs/powman.h"
 #include "pico/aon_timer.h"
+#include "lib/dl2416t/dl2416t.h" 
 
 
 #define TX    0
@@ -62,22 +63,19 @@ struct tm alarm =     {0, 0, 0, 0, 0, 0, 0, 0};
 bool alarm_on = false;
 
 
+struct dl2416t display = {
+    {D0, D1, D2, D3, D4, D5, D6},
+    {A0, A1},
+    CLR_N,
+    WR_N,
+    BL_N,
+    CUE,
+    CU_N
+};
+
+
 void setup_gpio() {
     gpio_init_mask(
-        0x1 << CLR_N | 
-        0x1 << CUE   | 
-        0x1 << CU_N  | 
-        0x1 << WR_N  | 
-        0x1 << BL_N  | 
-        0x1 << A1    | 
-        0x1 << A0    | 
-        0x1 << D0    | 
-        0x1 << D1    | 
-        0x1 << D2    | 
-        0x1 << D3    | 
-        0x1 << D4    | 
-        0x1 << D5    | 
-        0x1 << D6    |
         0x1 << BUZ   |
         0x1 << LED   |
         0x1 << ROTM  |
@@ -85,20 +83,6 @@ void setup_gpio() {
         0x1 << ROTBN 
     );
     gpio_set_dir_out_masked(
-        0x1 << CLR_N | 
-        0x1 << CUE   | 
-        0x1 << CU_N  | 
-        0x1 << WR_N  | 
-        0x1 << BL_N  | 
-        0x1 << A1    | 
-        0x1 << A0    | 
-        0x1 << D0    | 
-        0x1 << D1    | 
-        0x1 << D2    | 
-        0x1 << D3    | 
-        0x1 << D4    | 
-        0x1 << D5    | 
-        0x1 << D6    |
         0x1 << BUZ   |
         0x1 << LED   
     );
@@ -111,64 +95,13 @@ void setup_clks() {
 }
 
 
-void setup_display() {
-    gpio_put(BL_N, true);
-    gpio_put(CUE, false);
-    gpio_put(CU_N, true);
-    gpio_put(CLR_N, true);
-    gpio_put(WR_N, true);
-    sleep_us(2);
-}
-
-
-void display_char(char character, uint8_t index) {
-    gpio_put(WR_N, true);
-    sleep_us(1);
-    gpio_put_masked(
-        0x1 << D0 |
-        0x1 << D1 |
-        0x1 << D2 |
-        0x1 << D3 |
-        0x1 << D4 |
-        0x1 << D5 |
-        0x1 << D6 |
-        0x1 << A0 |
-        0x1 << A1 ,
-        ((character & 0b0000001u) != 0) << D0 |
-        ((character & 0b0000010u) != 0) << D1 |
-        ((character & 0b0000100u) != 0) << D2 |
-        ((character & 0b0001000u) != 0) << D3 |
-        ((character & 0b0010000u) != 0) << D4 |
-        ((character & 0b0100000u) != 0) << D5 |
-        ((character & 0b1000000u) != 0) << D6 |
-        ((index     & 0b01      ) != 0) << A0 |
-        ((index     & 0b10      ) != 0) << A1
-    );
-    sleep_us(2);
-    gpio_put(WR_N, false);
-    sleep_us(1);
-    gpio_put(WR_N, true);
-}
-
-
-void display_word(char string[5]) {
-    gpio_put(CLR_N, false);
-    sleep_us(2);
-    gpio_put(CLR_N, true);
-    sleep_us(2);
-    for (int i = 0; i <= 3; i++) {
-        display_char(string[i], 3-i);
-    }
-}
-
-
 int run_startup(void) {
     stdio_init_all();
     uart_init(uart0, 115200);
 
     setup_gpio();
     setup_clks();
-    setup_display();
+    setup_display(&display);
 
     // initial time to aid with debug
     time_stat.tm_hour = 8;
@@ -179,9 +112,9 @@ int run_startup(void) {
     alarm.tm_hour = 7;
     alarm.tm_min  = 30;
 
-    display_word("PWR-");
+    display_word(&display, "PWR-");
     sleep_ms(1000);
-    display_word("-ON!");
+    display_word(&display, "-ON!");
     sleep_ms(1000);
     return ADJUST_HRS;
 }
@@ -199,15 +132,18 @@ int run_display_time(void) {
     last_min = time_stat.tm_min;
     last_hr  = time_stat.tm_hour;
 
-    display_char((uint32_t) last_min%10 + 0x30, 0);
-    display_char((uint32_t) last_min/10 + 0x30, 1);
-    display_char((uint32_t) last_hr%10  + 0x30, 2);
-    display_char((uint32_t) last_hr/10  + 0x30, 3);
+    display_chars_all(
+        &display,
+        last_min%10 + 0x30,
+        last_min/10 + 0x30,
+        last_hr%10  + 0x30,
+        last_hr/10  + 0x30
+    );
 
     if (alarm_on) gpio_put(LED, true);
     else          gpio_put(LED, false);
 
-    gpio_put(BL_N, true);
+    display_blank(&display, false);
 
     while(1) {
         aon_timer_get_time_calendar(&time_stat);
@@ -228,10 +164,13 @@ int run_display_time(void) {
         }
 
         if (last_min != curr_min) {
-            display_char((uint32_t) curr_min%10 + 0x30, 0);
-            display_char((uint32_t) curr_min/10 + 0x30, 1);
-            display_char((uint32_t) curr_hr%10  + 0x30, 2);
-            display_char((uint32_t) curr_hr/10  + 0x30, 3);
+            display_chars_all(
+                &display,
+                curr_min%10 + 0x30,
+                curr_min/10 + 0x30,
+                curr_hr%10  + 0x30,
+                curr_hr/10  + 0x30
+            );
         }
 
         last_min = curr_min;
@@ -260,10 +199,13 @@ int run_adjust_hrs(void) {
         curr_rot[0] = gpio_poll & (0x1 << ROTP) ? true : false;
         curr_rot[1] = gpio_poll & (0x1 << ROTM) ? true : false;
 
-        display_char((uint32_t) 'H', 3);
-        display_char((uint32_t) ':', 2);
-        display_char((uint32_t) target_hr%10  + 0x30, 0);
-        display_char((uint32_t) target_hr/10  + 0x30, 1);
+        display_chars_all(
+            &display,
+            target_hr%10  + 0x30,
+            target_hr/10  + 0x30,
+            ':',
+            'H'
+        );
 
         if (curr_rot[0] != last_rot[0]) {
             if (curr_rot[1] != curr_rot[0]) {
@@ -308,10 +250,13 @@ int run_adjust_mins(void) {
         curr_rot[0] = gpio_poll & (0x1 << ROTP) ? true : false;
         curr_rot[1] = gpio_poll & (0x1 << ROTM) ? true : false;
 
-        display_char((uint32_t) 'M', 3);
-        display_char((uint32_t) ':', 2);
-        display_char((uint32_t) target_min%10  + 0x30, 0);
-        display_char((uint32_t) target_min/10  + 0x30, 1);
+        display_chars_all(
+            &display,
+            target_min%10  + 0x30,
+            target_min/10  + 0x30,
+            ':',
+            'M'
+        );
 
         if (curr_rot[0] != last_rot[0]) {
             if (curr_rot[1] != curr_rot[0]) {
@@ -386,15 +331,15 @@ int run_set_menu() {
 
         switch (menu_sel) {
             case MENU_TIME  : 
-                display_word("TIME");
+                display_word(&display, "TIME");
                 sleep_ms(15);
                 break;
             case MENU_ALARM : 
-                display_word("ALRM");
+                display_word(&display, "ALRM");
                 sleep_ms(15);
                 break;
             case MENU_ALARM_OFF   : 
-                display_word("AOFF");
+                display_word(&display, "AOFF");
                 sleep_ms(15);
                 break;
             default: // go back to time display is we get to unknown state
@@ -427,10 +372,13 @@ int run_adjust_hrs_mins(void) {
         // toggle LED every 256 ms
         gpio_put(LED, !(powman_hw->read_time_lower & 0b110000000));
 
-        display_char((uint32_t) alarm.tm_min%10  + 0x30, 0);
-        display_char((uint32_t) alarm.tm_min/10  + 0x30, 1);
-        display_char((uint32_t) alarm.tm_hour%10 + 0x30, 2);
-        display_char((uint32_t) alarm.tm_hour/10 + 0x30, 3);
+        display_chars_all(
+            &display,
+            alarm.tm_min%10  + 0x30,
+            alarm.tm_min/10  + 0x30,
+            alarm.tm_hour%10  + 0x30,
+            alarm.tm_hour/10 + 0x30
+        );
 
         if (curr_rot[0] != last_rot[0]) {
             if (curr_rot[1] != curr_rot[0]) {
@@ -484,10 +432,13 @@ int run_alarm_active(void) {
     last_min = time_stat.tm_min;
     last_hr  = time_stat.tm_hour;
 
-    display_char((uint32_t) last_min%10 + 0x30, 0);
-    display_char((uint32_t) last_min/10 + 0x30, 1);
-    display_char((uint32_t) last_hr%10  + 0x30, 2);
-    display_char((uint32_t) last_hr/10  + 0x30, 3);
+    display_chars_all(
+            &display,
+            last_min%10 + 0x30,
+            last_min/10 + 0x30,
+            last_hr%10  + 0x30,
+            last_hr/10  + 0x30
+        );
 
     timeout = powman_timer_get_ms() + (uint64_t) 1800000u;  // 20 mins timeout
 
@@ -496,20 +447,20 @@ int run_alarm_active(void) {
 
         aon_timer_get_time_calendar(&time_stat);
         curr_min = time_stat.tm_min;
-        curr_hr  = time_stat.tm_hour;
+        curr_hr  = time_stat.tm_hour; 
 
-        gpio_put(BL_N, powman_hw->read_time_lower & 0b10000000  );
+        display_blank(&display, powman_hw->read_time_lower & 0b10000000 ? true : false);
         gpio_put(BUZ , !(powman_hw->read_time_lower & 0b1010000000));
 
         curr_btn = gpio_get(ROTBN);
         if (!curr_btn & last_btn) {
             time_zero = powman_timer_get_ms();
-            gpio_put(BL_N, true);
+            display_blank(&display, false);
             gpio_put(BUZ , false);
             sleep_ms(50); // sleep for debounce
             // wait for button to be deasserted
             while (!gpio_get(ROTBN)) {
-                gpio_put(BL_N, powman_hw->read_time_lower & 0b10000000  );
+                display_blank(&display, powman_hw->read_time_lower & 0b10000000 ? true : false);
                 gpio_put(BUZ , !(powman_hw->read_time_lower & 0b1010000000));
                 if (powman_timer_get_ms() > time_zero + 10000u) return DISABLE_ALARM;
             }
@@ -534,10 +485,13 @@ int run_alarm_active(void) {
         }
         
         if (last_min != curr_min) {
-            display_char((uint32_t) curr_min%10 + 0x30, 0);
-            display_char((uint32_t) curr_min/10 + 0x30, 1);
-            display_char((uint32_t) curr_hr%10  + 0x30, 2);
-            display_char((uint32_t) curr_hr/10  + 0x30, 3);
+            display_chars_all(
+                &display,
+                curr_min%10 + 0x30,
+                curr_min/10 + 0x30,
+                curr_hr%10  + 0x30,
+                curr_hr/10  + 0x30
+            );
         }
 
         last_min = curr_min;
@@ -551,7 +505,7 @@ int run_disable_alarm(void) {
     gpio_put(BL_N, true);
     gpio_put(LED, false);
     alarm_on = false;
-    display_word("ALRM");
+    display_word(&display, "ALRM");
     gpio_put(BUZ, true);
     sleep_ms(100);
     gpio_put(BUZ, false);
@@ -560,7 +514,7 @@ int run_disable_alarm(void) {
     sleep_ms(100);
     gpio_put(BUZ, false);
     sleep_ms(400);
-    display_word("OFF ");
+    display_word(&display, "OFF ");
     sleep_ms(600);
     gpio_put(BUZ, true);
     sleep_ms(600);
