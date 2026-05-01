@@ -77,20 +77,6 @@ struct dl2416t display = {
 
 void setup_gpio() {
     gpio_init_mask(
-        0x1 << CLR_N | 
-        0x1 << CUE   | 
-        0x1 << CU_N  | 
-        0x1 << WR_N  | 
-        0x1 << BL_N  | 
-        0x1 << A1    | 
-        0x1 << A0    | 
-        0x1 << D0    | 
-        0x1 << D1    | 
-        0x1 << D2    | 
-        0x1 << D3    | 
-        0x1 << D4    | 
-        0x1 << D5    | 
-        0x1 << D6    |
         0x1 << BUZ   |
         0x1 << LED   |
         0x1 << ROTM  |
@@ -98,20 +84,6 @@ void setup_gpio() {
         0x1 << ROTBN 
     );
     gpio_set_dir_out_masked(
-        0x1 << CLR_N | 
-        0x1 << CUE   | 
-        0x1 << CU_N  | 
-        0x1 << WR_N  | 
-        0x1 << BL_N  | 
-        0x1 << A1    | 
-        0x1 << A0    | 
-        0x1 << D0    | 
-        0x1 << D1    | 
-        0x1 << D2    | 
-        0x1 << D3    | 
-        0x1 << D4    | 
-        0x1 << D5    | 
-        0x1 << D6    |
         0x1 << BUZ   |
         0x1 << LED   
     );
