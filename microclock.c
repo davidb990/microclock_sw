@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdint.h>
 #include "pico/stdlib.h"
 #include "hardware/clocks.h"
 #include "hardware/uart.h"
