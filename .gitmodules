@@ -1,0 +1,3 @@
+[submodule "lib/dl2416t"]
+	path = lib/dl2416t
+	url = https://github.com/davidb990/dl2416t.git
