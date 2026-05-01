@@ -135,10 +135,10 @@ int run_display_time(void) {
 
     display_chars_all(
         &display,
-        (uint32_t) last_min%10 + 0x30,
-        (uint32_t) last_min/10 + 0x30,
-        (uint32_t) last_hr%10  + 0x30,
-        (uint32_t) last_hr/10  + 0x30
+        last_min%10 + 0x30,
+        last_min/10 + 0x30,
+        last_hr%10  + 0x30,
+        last_hr/10  + 0x30
     );
 
     if (alarm_on) gpio_put(LED, true);
@@ -167,10 +167,10 @@ int run_display_time(void) {
         if (last_min != curr_min) {
             display_chars_all(
                 &display,
-                (uint32_t) curr_min%10 + 0x30,
-                (uint32_t) curr_min/10 + 0x30,
-                (uint32_t) curr_hr%10  + 0x30,
-                (uint32_t) curr_hr/10  + 0x30
+                curr_min%10 + 0x30,
+                curr_min/10 + 0x30,
+                curr_hr%10  + 0x30,
+                curr_hr/10  + 0x30
             );
         }
 
@@ -202,10 +202,10 @@ int run_adjust_hrs(void) {
 
         display_chars_all(
             &display,
-            (uint32_t) target_hr%10  + 0x30,
-            (uint32_t) target_hr/10  + 0x30,
-            (uint32_t) ':',
-            (uint32_t) 'H'
+            target_hr%10  + 0x30,
+            target_hr/10  + 0x30,
+            ':',
+            'H'
         );
 
         if (curr_rot[0] != last_rot[0]) {
@@ -253,10 +253,10 @@ int run_adjust_mins(void) {
 
         display_chars_all(
             &display,
-            (uint32_t) target_min%10  + 0x30,
-            (uint32_t) target_min/10  + 0x30,
-            (uint32_t) ':',
-            (uint32_t) 'M'
+            target_min%10  + 0x30,
+            target_min/10  + 0x30,
+            ':',
+            'M'
         );
 
         if (curr_rot[0] != last_rot[0]) {
@@ -375,10 +375,10 @@ int run_adjust_hrs_mins(void) {
 
         display_chars_all(
             &display,
-            (uint32_t) alarm.tm_min%10  + 0x30,
-            (uint32_t) alarm.tm_min/10  + 0x30,
-            (uint32_t) alarm.tm_hour%10  + 0x30,
-            (uint32_t) alarm.tm_hour/10 + 0x30
+            alarm.tm_min%10  + 0x30,
+            alarm.tm_min/10  + 0x30,
+            alarm.tm_hour%10  + 0x30,
+            alarm.tm_hour/10 + 0x30
         );
 
         if (curr_rot[0] != last_rot[0]) {
@@ -435,10 +435,10 @@ int run_alarm_active(void) {
 
     display_chars_all(
             &display,
-            (uint32_t) last_min%10 + 0x30,
-            (uint32_t) last_min/10 + 0x30,
-            (uint32_t) last_hr%10  + 0x30,
-            (uint32_t) last_hr/10  + 0x30
+            last_min%10 + 0x30,
+            last_min/10 + 0x30,
+            last_hr%10  + 0x30,
+            last_hr/10  + 0x30
         );
 
     timeout = powman_timer_get_ms() + (uint64_t) 1800000u;  // 20 mins timeout
@@ -488,10 +488,10 @@ int run_alarm_active(void) {
         if (last_min != curr_min) {
             display_chars_all(
                 &display,
-                (uint32_t) curr_min%10 + 0x30,
-                (uint32_t) curr_min/10 + 0x30,
-                (uint32_t) curr_hr%10  + 0x30,
-                (uint32_t) curr_hr/10  + 0x30
+                curr_min%10 + 0x30,
+                curr_min/10 + 0x30,
+                curr_hr%10  + 0x30,
+                curr_hr/10  + 0x30
             );
         }
 

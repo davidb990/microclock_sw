@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "dl2416t.h"
 
+
 void __gpio_setup_output(unsigned int *gpio_ptr) {
     if (gpio_ptr != NULL) {
         gpio_init(*gpio_ptr);
@@ -81,5 +82,4 @@ void display_chars_all(struct dl2416t *dl2416t, char char_0, char char_1, char c
 void display_blank(struct dl2416t *dl2416t, bool blank_enable) {
     gpio_put((uintptr_t) dl2416t->blank_n, !blank_enable);
 }
-
 
