@@ -60,9 +60,7 @@ enum menu {
 struct tm time_stat = {0, 0, 0, 0, 0, 0, 0, 0};
 struct tm alarm =     {0, 0, 0, 0, 0, 0, 0, 0};
 
-bool alarm_on = false;
-
-
+// display struct defining the pins used
 struct dl2416t display = {
     {D0, D1, D2, D3, D4, D5, D6},
     {A0, A1},
@@ -72,6 +70,8 @@ struct dl2416t display = {
     CUE,
     CU_N
 };
+
+bool alarm_on;
 
 
 void setup_gpio() {
@@ -102,6 +102,12 @@ int run_startup(void) {
     setup_gpio();
     setup_clks();
     dl2416t_setup(&display);
+
+    alarm_on = false;
+
+    // timespec struct, initalise at 0
+    struct tm time_stat = {0, 0, 0, 0, 0, 0, 0, 0};
+    struct tm alarm =     {0, 0, 0, 0, 0, 0, 0, 0};
 
     // initial time to aid with debug
     time_stat.tm_hour = 8;
@@ -376,7 +382,7 @@ int run_adjust_hrs_mins(void) {
             &display,
             alarm.tm_min%10  + 0x30,
             alarm.tm_min/10  + 0x30,
-            alarm.tm_hour%10  + 0x30,
+            alarm.tm_hour%10 + 0x30,
             alarm.tm_hour/10 + 0x30
         );
 
